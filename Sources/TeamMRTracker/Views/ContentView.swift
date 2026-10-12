@@ -51,6 +51,7 @@ public struct ContentView: View {
             .background(Color(NSColor.windowBackgroundColor))
         }
         .frame(width: 480, height: 600)
+        .background(Color(NSColor.windowBackgroundColor))
         .sheet(isPresented: $viewModel.showSettings) {
             SettingsView(viewModel: viewModel)
         }

@@ -8,6 +8,10 @@
 
 A native, lightweight macOS menu bar utility (~1.2 MB binary, <25 MB RAM) designed for engineering leads and managers to track, triage, and unblock their team's Pull Requests and Merge Requests across **hundreds of microservices** in real time.
 
+<p align="center">
+  <img src="assets/screenshot.png" alt="Team PR & MR Tracker macOS Interface" width="460">
+</p>
+
 ---
 
 ## 💡 The Problem & The Solution

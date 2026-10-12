@@ -12,6 +12,17 @@ struct TeamMRTrackerApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var viewModel = MRTrackerViewModel()
 
+    init() {
+        if CommandLine.arguments.contains("--snapshot") {
+            let outputIndex = CommandLine.arguments.firstIndex(of: "--snapshot").flatMap { $0 + 1 }
+            let outputPath = (outputIndex != nil && outputIndex! < CommandLine.arguments.count)
+                ? CommandLine.arguments[outputIndex!]
+                : "assets/screenshot.png"
+            Snapshotter.capture(to: outputPath)
+            exit(0)
+        }
+    }
+
     var body: some Scene {
         MenuBarExtra {
             ContentView(viewModel: viewModel)
