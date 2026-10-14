@@ -94,12 +94,12 @@ public actor GitHubService {
         authMethod: AuthMethod,
         token: String,
         maxInactiveDays: Int
-    ) async -> [MergeRequestItem] {
-        await withTaskGroup(of: [MergeRequestItem].self) { group in
+    ) async throws -> [MergeRequestItem] {
+        return try await withThrowingTaskGroup(of: (String, Result<[MergeRequestItem], Error>).self) { group in
             for member in members {
                 group.addTask {
                     do {
-                        return try await self.fetchPRsForMember(
+                        let items = try await self.fetchPRsForMember(
                             username: member.username,
                             org: org,
                             host: host,
@@ -107,16 +107,27 @@ public actor GitHubService {
                             token: token,
                             maxInactiveDays: maxInactiveDays
                         )
+                        return (member.username, .success(items))
                     } catch {
-                        print("Error fetching GitHub PRs for \(member.username): \(error)")
-                        return []
+                        return (member.username, .failure(error))
                     }
                 }
             }
 
             var allPRs: [MergeRequestItem] = []
-            for await memberPRs in group {
-                allPRs.append(contentsOf: memberPRs)
+            var lastError: Error?
+
+            for try await (_, result) in group {
+                switch result {
+                case .success(let items):
+                    allPRs.append(contentsOf: items)
+                case .failure(let err):
+                    lastError = err
+                }
+            }
+
+            if allPRs.isEmpty, let err = lastError {
+                throw err
             }
 
             var seen = Set<Int>()

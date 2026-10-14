@@ -5,10 +5,10 @@ public actor GitProviderService {
 
     private init() {}
 
-    public func fetchTeamItems(config: AppConfig) async -> [MergeRequestItem] {
+    public func fetchTeamItems(config: AppConfig) async throws -> [MergeRequestItem] {
         switch config.platform {
         case .gitlab:
-            return await GitLabService.shared.fetchTeamMRs(
+            return try await GitLabService.shared.fetchTeamMRs(
                 members: config.teamMembers,
                 groupId: config.orgOrGroup,
                 host: config.gitlabHost,
@@ -17,7 +17,7 @@ public actor GitProviderService {
                 maxInactiveDays: config.maxInactiveDays
             )
         case .github:
-            return await GitHubService.shared.fetchTeamPRs(
+            return try await GitHubService.shared.fetchTeamPRs(
                 members: config.teamMembers,
                 org: config.orgOrGroup,
                 host: config.githubHost,

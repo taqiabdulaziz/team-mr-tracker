@@ -6,17 +6,58 @@ public struct MRListView: View {
     public var body: some View {
         ScrollView {
             LazyVStack(spacing: 8) {
+                if let err = viewModel.errorMessage {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundColor(.orange)
+                                .font(.system(size: 13))
+                            Text("Connection & Sync Issue")
+                                .font(.system(size: 12, weight: .bold))
+                            Spacer()
+                        }
+
+                        Text(err)
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        HStack(spacing: 8) {
+                            Button("Preferences (⚙)") {
+                                viewModel.showSettings = true
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .controlSize(.small)
+
+                            Button("Retry Sync") {
+                                Task {
+                                    await viewModel.refresh()
+                                }
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                        }
+                    }
+                    .padding(12)
+                    .background(Color.orange.opacity(0.12))
+                    .cornerRadius(8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.orange.opacity(0.35), lineWidth: 1)
+                    )
+                }
+
                 if viewModel.isLoading && viewModel.mergeRequests.isEmpty {
                     VStack(spacing: 12) {
                         ProgressView()
                             .scaleEffect(0.8)
-                        Text("Syncing team merge requests from GitLab...")
+                        Text("Syncing team \(viewModel.config.platform.term)s from \(viewModel.config.platform.rawValue)...")
                             .font(.system(size: 11))
                             .foregroundColor(.secondary)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 40)
-                } else if viewModel.filteredMRs.isEmpty {
+                } else if viewModel.filteredMRs.isEmpty && viewModel.errorMessage == nil {
                     VStack(spacing: 10) {
                         Image(systemName: "checkmark.circle")
                             .font(.system(size: 28))

@@ -91,12 +91,12 @@ public actor GitLabService {
         authMethod: AuthMethod = .cli,
         token: String = "",
         maxInactiveDays: Int = 45
-    ) async -> [MergeRequestItem] {
-        await withTaskGroup(of: [MergeRequestItem].self) { group in
+    ) async throws -> [MergeRequestItem] {
+        return try await withThrowingTaskGroup(of: (String, Result<[MergeRequestItem], Error>).self) { group in
             for member in members {
                 group.addTask {
                     do {
-                        return try await self.fetchMRsForMember(
+                        let items = try await self.fetchMRsForMember(
                             username: member.username,
                             groupId: groupId,
                             host: host,
@@ -104,16 +104,35 @@ public actor GitLabService {
                             token: token,
                             maxInactiveDays: maxInactiveDays
                         )
+                        return (member.username, .success(items))
                     } catch {
-                        print("Error fetching GitLab MRs for \(member.username): \(error)")
-                        return []
+                        return (member.username, .failure(error))
                     }
                 }
             }
 
             var allMRs: [MergeRequestItem] = []
-            for await memberMRs in group {
-                allMRs.append(contentsOf: memberMRs)
+            var lastError: Error?
+
+            for try await (_, result) in group {
+                switch result {
+                case .success(let items):
+                    allMRs.append(contentsOf: items)
+                case .failure(let err):
+                    lastError = err
+                }
+            }
+
+            if allMRs.isEmpty, let err = lastError {
+                let errStr = err.localizedDescription
+                if errStr.contains("invalid_grant") || errStr.contains("401") || errStr.contains("Unauthorized") {
+                    throw NSError(
+                        domain: "GitLabService",
+                        code: 401,
+                        userInfo: [NSLocalizedDescriptionKey: "GitLab session expired (OAuth invalid_grant). Please run 'glab auth login' in terminal or enter a Personal Access Token in app Settings."]
+                    )
+                }
+                throw err
             }
 
             var seen = Set<Int>()

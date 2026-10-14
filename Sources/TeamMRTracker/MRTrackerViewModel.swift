@@ -41,9 +41,15 @@ public final class MRTrackerViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
 
-        let items = await GitProviderService.shared.fetchTeamItems(config: config)
-        self.mergeRequests = items
-        self.lastRefreshedAt = Date()
+        do {
+            let items = try await GitProviderService.shared.fetchTeamItems(config: config)
+            self.mergeRequests = items
+            self.lastRefreshedAt = Date()
+            self.errorMessage = nil
+        } catch {
+            self.errorMessage = error.localizedDescription
+            print("Refresh error: \(error)")
+        }
         self.isLoading = false
     }
 
